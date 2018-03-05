@@ -27,6 +27,11 @@ def about():
     """Render the website's about page."""
     return render_template('about.html')
 
+@app.route("/securepage/")
+def securepage():
+    """Render the secure page"""
+    return render_template(securepage.html)
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -34,7 +39,10 @@ def login():
     if request.method == "POST":
         # change this to actually validate the entire form submission
         # and not just one field
-        if form.username.data:
+        if form.validate_on_submit():
+            username=form.username.data
+            password=form.password.data
+        
             # Get the username and password values from the form.
 
             # using your model, query database for a user based on the username
@@ -42,12 +50,23 @@ def login():
             # store the result of that query to a `user` variable so it can be
             # passed to the login_user() method.
 
-            # get user id, load into session
-            login_user(user)
+            user=UserProfile.query.filter_by(username=username,password=password).first()
+             # get user id, load into session
+            if user: 
+                login_user(user)
 
             # remember to flash a message to the user
-            return redirect(url_for("home"))  # they should be redirected to a secure-page route instead
+                flash(' You have logged in successfully.', 'success')
+            
+                return redirect(url_for("securepage"))  # they should be redirected to a secure-page route instead
+            else:
+                flash("Login Failed","failed")
     return render_template("login.html", form=form)
+@app.route('/logout')
+def logout():
+    logout_user()
+    flash('You were logged out', 'success')
+    return redirect(url_for('home'))
 
 
 # user_loader callback. This callback is used to reload the user object from
