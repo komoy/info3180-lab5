@@ -28,6 +28,7 @@ def about():
     return render_template('about.html')
 
 @app.route("/securepage/")
+@login_required
 def securepage():
     """Render the secure page"""
     return render_template(securepage.html)
@@ -36,12 +37,12 @@ def securepage():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     form = LoginForm()
-    if request.method == "POST":
+    if request.method == "POST" and form.validate_on_submit():
         # change this to actually validate the entire form submission
         # and not just one field
-        if form.validate_on_submit():
-            username=form.username.data
-            password=form.password.data
+         
+        username=form.username.data
+        password=form.password.data
         
             # Get the username and password values from the form.
 
@@ -50,22 +51,26 @@ def login():
             # store the result of that query to a `user` variable so it can be
             # passed to the login_user() method.
 
-            user=UserProfile.query.filter_by(username=username,password=password).first()
+        user = UserProfile.query.filter_by(username=username, password=password).first()
              # get user id, load into session
-            if user: 
-                login_user(user)
+        if user is not None: 
+            
+            login_user(user)
 
             # remember to flash a message to the user
-                flash(' You have logged in successfully.', 'success')
+            flash(' You have logged in successfully.', 'success')
             
-                return redirect(url_for("securepage"))  # they should be redirected to a secure-page route instead
-            else:
-                flash("Login Failed","failed")
+            return redirect(url_for("secure_page"))  # they should be redirected to a secure-page route instead
+        else:
+            flash("Login Failed",'danger')
+            
     return render_template("login.html", form=form)
+    
 @app.route('/logout')
+@login_required
 def logout():
     logout_user()
-    flash('You were logged out', 'success')
+    flash('You were logged out', 'danger')
     return redirect(url_for('home'))
 
 
@@ -74,6 +79,16 @@ def logout():
 @login_manager.user_loader
 def load_user(id):
     return UserProfile.query.get(int(id))
+    
+def flash_errors(form):
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(u"Error in the %s field - %s" % (
+                getattr(form, field).label.text,
+                error
+            ), 'danger')
+
+
 
 ###
 # The functions below should be applicable to all Flask apps.
